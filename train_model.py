@@ -81,5 +81,35 @@ labels = []
 files = []
 
 for label_dir in sorted(data_dir.iterdir()):
-    if not label_dir.is_dir:
+    if not label_dir.is_dir():
         continue
+
+    label = label_dir.name
+
+    for csv_path in sorted(label_dir.glob("*.csv")):
+        try:
+            sequence = load_rep(csv_path)
+
+            sequences.append(sequence)
+            labels.append(label)
+            files.append(str(csv_path))
+
+        except Exception as exc:
+            print(f"Skipping {csv_path}: {exc}")
+
+if not sequences:
+    raise RuntimeError(
+        f"No usable reps found in {data_dir.resolve()}"
+    )
+
+X = np.stack(sequences).astype(np.float32)
+labels = np.asarray(labels)
+
+encoder = LabelEncoder()
+y = encoder.fit_transform(labels)
+
+print("Dataset shape", X.shape)
+print("Classes", encoder.classes_)
+print("Reps per class: ")
+for class_name in encoder.classes_:
+    print(f"    {class_name}: {(labels == class_name).sum()}")
