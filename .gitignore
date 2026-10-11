@@ -1,0 +1,14 @@
+# Ignore python cache
+__pycache__/
+*.pyc
+
+# Ignore video training data
+.csv
+
+# Ignore local datasets
+data/
+cache/
+.pytest_cache/
+
+# Ignore Mac files
+.DS_store
