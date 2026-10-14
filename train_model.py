@@ -113,3 +113,72 @@ print("Classes", encoder.classes_)
 print("Reps per class: ")
 for class_name in encoder.classes_:
     print(f"    {class_name}: {(labels == class_name).sum()}")
+
+label_counts = np.bincount(y)
+
+if len(label_counts) < 2 or np.min(label_counts) < 2:
+    raise ValueError(
+        "Each label needs at least two reps for a stratified train/test split"
+    )
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size = 0.2,
+    random_state = 42,
+    stratify = y
+)
+
+feature_mean = X_train.reshape(-1, input_size).mean(axis=0)
+feature_std = X_train.reshape(-1, input_size).std(axis=0)
+
+feature_std[feature_std < 1e-6] = 1
+
+X_train = (X_train - feature_mean)/(feature_std)
+X_test = (X_test - feature_mean)/(feature_std)
+
+X_train = torch.tensor(X_train, dtype=torch.float32)
+X_test = torch.tensor(X_test, dtype=torch.float32)
+
+y_train = torch.tensor(y_train, dtype=torch.long)
+y_test = torch.tensor(y_test, dtype=torch.long)
+
+train_loader = DataLoader(
+    TensorDataset(X_train, y_train),
+    batch_size = batch_size,
+    shuffle = True
+)
+
+class SquatClassifier(nn.Module):
+    def __init__(self, input_size, num_classes):
+        super().__init__()
+
+        self.network = nn.Sequential(
+            nn.Flatten,
+
+            nn.Linear(input_size * num_frames, 256),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+
+            nn.Linear(128, num_classes)
+        )
+
+    def forward(self, x):
+        return self.network(x)
+
+model = SquatClassifier(
+    input_size,
+    len(encoder.classes_)
+).to(device)
+
+loss_fn = nn.CrossEntropyLoss()
+
+optimizer = torch.optim.Adam(
+    model.parameters(),
+    lr = learning_rate,
+    weight_decay = 1e^-4
+)
