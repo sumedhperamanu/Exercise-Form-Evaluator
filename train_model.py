@@ -2,12 +2,17 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
+import time
 from torch import nn
 from torch.utils.data import TensorDataset, DataLoader
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import classification_report, confusion_matrix
+
+start_time = time.perf_counter()
+
+# Configuration
 
 data_dir = Path("data/squat")
 model_dir = Path("models")
@@ -28,6 +33,8 @@ device = torch.device(
 
 torch.manual_seed(42)
 np.random.seed(42)
+
+# Read a Rep from CSV File
 
 def load_rep(csv_path):
     df = pd.read_csv(csv_path, skiprows=2)
@@ -76,6 +83,8 @@ def load_rep(csv_path):
 
     return resized
 
+# Load Labelled Reps
+
 sequences = []
 labels = []
 files = []
@@ -114,6 +123,8 @@ print("Reps per class: ")
 for class_name in encoder.classes_:
     print(f"    {class_name}: {(labels == class_name).sum()}")
 
+# Train/Test Split
+
 label_counts = np.bincount(y)
 
 if len(label_counts) < 2 or np.min(label_counts) < 2:
@@ -128,6 +139,8 @@ X_train, X_test, y_train, y_test = train_test_split(
     random_state = 42,
     stratify = y
 )
+
+# Standardizing Features with Training Data
 
 feature_mean = X_train.reshape(-1, input_size).mean(axis=0)
 feature_std = X_train.reshape(-1, input_size).std(axis=0)
@@ -148,6 +161,8 @@ train_loader = DataLoader(
     batch_size = batch_size,
     shuffle = True
 )
+
+# Neural Network
 
 class SquatClassifier(nn.Module):
     def __init__(self, input_size, num_classes):
@@ -183,6 +198,10 @@ optimizer = torch.optim.Adam(
     weight_decay = 1e^-4
 )
 
+elapsed = time.perf_counter() - start_time
+
+# Training Loop
+
 for epoch in range(epochs):
     model.train()
     total_loss = 0.0
@@ -207,6 +226,8 @@ for epoch in range(epochs):
             f"Loss: {total_loss / len(train_loader):.4f}"
         )
 
+# Evaluate
+
 model.eval()
 
 with torch.no_grad():
@@ -229,3 +250,16 @@ print(confusion_matrix(
     labels = np.arange(len(encoder.classes_)),
 ))
 
+# Save Model + Preprocessing Parameters
+
+torch.save({
+    "state_dict": model.cpu().state_dict(),
+    "classes": encoder.classes_.tolist(),
+    "feature_mean": feature_mean,
+    "feature_std": feature_std,
+    "num_frames": num_frames,
+    "input_size": input_size
+}, model_dir / "squat_classifier.pt")
+
+print("\nSaved to models/squat_classifier.pt")
+print(f"Training time: {elapsed:.2f} seconds")
