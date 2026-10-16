@@ -182,3 +182,50 @@ optimizer = torch.optim.Adam(
     lr = learning_rate,
     weight_decay = 1e^-4
 )
+
+for epoch in range(epochs):
+    model.train()
+    total_loss = 0.0
+
+    for batch_x, batch_y in train_loader:
+        batch_x = batch_x.to(device)
+        batch_y = batch_y.to(device)
+
+        optimizer.zero_grad()
+
+        logits = model(batch_x)
+        loss = loss_fn(logits, batch_y)
+
+        loss.backward()
+        optimizer.step()
+
+        total_loss += loss.item()
+
+    if (epoch + 1) % 5 == 0:
+        print(
+            f"Epoch {epoch + 1:02d}/{epochs}"
+            f"Loss: {total_loss / len(train_loader):.4f}"
+        )
+
+model.eval()
+
+with torch.no_grad():
+    logits = model(X_test.to(device))
+    predictions = logits.argmax(dim=1).cpu.numpy()
+
+print("\nClassification Report")
+print(classification_report(
+    y_test.numpy(),
+    predictions,
+    labels = np.arange(len(encoder.classes_)),
+    target_names = encoder.classes_,
+    zero_division = 0
+))
+
+print("Confusion Matrix")
+print(confusion_matrix(
+    y_test.numpy(),
+    predictions,
+    labels = np.arange(len(encoder.classes_)),
+))
+
