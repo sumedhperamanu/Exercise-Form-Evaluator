@@ -6,7 +6,7 @@ from datetime import datetime
 
 exercise = "squat"
 
-label = "bad"
+label = "good"
 data_dir = f"data/{exercise}/{label}"
 os.makedirs(data_dir, exist_ok=True)
 

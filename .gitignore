@@ -2,13 +2,29 @@
 __pycache__/
 *.pyc
 
+# Virtual environments
+venv/
+.venv/
+
 # Ignore video training data
-.csv
+#.csv
 
 # Ignore local datasets
-data/
+#data/
 cache/
 .pytest_cache/
 
+# Trained model files
+*.pt
+*.pth
+*.h5
+*.keras
+
+# Editor / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
 # Ignore Mac files
-.DS_store
+.DS_Store
