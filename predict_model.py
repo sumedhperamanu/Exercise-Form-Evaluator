@@ -11,6 +11,8 @@ device = torch.device(
     "cuda" if torch.cuda.is_available else "cpu"
 )
 
+# Defining MLP architecture to classify squat sequences
+
 class SquatClassifier (nn.Module):
     def __init__(self, input_size, num_classes):
         super().__init__()
@@ -28,3 +30,22 @@ class SquatClassifier (nn.Module):
 
         def forward(self, x):
             return self.network(x)
+
+# Preparing model for inference
+
+checkpoint = torch.load(
+    "model/squats_classifier.pt",
+    map_location = device,
+    weights_only = True
+)
+
+classes = checkpoint["classes"]
+
+model = SquatClassifier(
+    input_size, len(classes)
+).to(device)
+
+model.load_state_dict(checkpoint["state_dict"])
+model.eval()
+
+
