@@ -68,5 +68,46 @@ def predict_rep(frames):
 
     sequence[~np.isfinite(sequence)] = np.nan
 
+    # Preprocessing + classification of recorded squat reps
+
+    sequence = (
+        pd.DataFrame(sequence)
+        .interpolate(axis=0, limit_direction="both")
+        .fillna(0,0)
+        .to_numpy(dtype=np.float32)
+    )
+
+    old_positions = np.linspace(0, 1, len(sequence))
+    new_positions = np.linspace(0, 1, num_frames)
+
+    sequence = np.stack([
+        np.interp(
+            new_positions,
+            old_positions,
+            sequence[:, j]
+        )
+        for j in range(input_size)
+    ], axis=1)
+
+    sequence = (sequence - feature_mean) / feature_std
+
+    x = torch.tensor(
+        sequence, dtype=torch.float32
+    ).unsqueeze(0).to(device)
+
+    with torch.no_grad():
+        probabilities = torch.softmax(
+            model(x), dim=1
+        )[0].cpu().numpy()
+
+    best_idx = int(np.argmax[probabilities])
+
+    return {
+        "label": classes[best_idx],
+        "probabilities": {
+            name: float(prob)
+            for name, prob in zip(classes, probabilities)
+        }
+    }
 
 
