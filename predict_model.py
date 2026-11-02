@@ -3,6 +3,7 @@ from pathlib import path
 import numpy as np
 import torch
 from torch import nn
+import pandas as pd
 
 num_frames = 30
 input_size = 132
@@ -47,5 +48,25 @@ model = SquatClassifier(
 
 model.load_state_dict(checkpoint["state_dict"])
 model.eval()
+
+feature_mean = checkpoint["feature_mean"]
+feature_std = checkpoint["feature_std"]
+
+def predict_rep(frames):
+    """Return predicted labels and associated probabilities."""
+
+    sequence = np.asarray(frames, dtype=np.float32)
+
+    if sequence.ndim != 2 or sequence.shape[1] != input_size:
+        raise ValueError("Expected shape (frames, 132)")
+
+    if len(sequence) < 2:
+        return {
+            "label": "unable_to_assess",
+            "probabilities": {}
+        }
+
+    sequence[~np.isfinite(sequence)] = np.nan
+
 
 
