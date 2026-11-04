@@ -29,13 +29,13 @@ class SquatClassifier (nn.Module):
             nn.Linear(128, num_classes)
         )
 
-        def forward(self, x):
-            return self.network(x)
+    def forward(self, x):
+        return self.network(x)
 
 # Preparing model for inference
 
 checkpoint = torch.load(
-    "models/squats_classifier.pt",
+    "models/squat_classifier.pt",
     map_location = device,
     weights_only = True
 )
@@ -49,8 +49,8 @@ model = SquatClassifier(
 model.load_state_dict(checkpoint["state_dict"])
 model.eval()
 
-feature_mean = checkpoint["feature_mean"]
-feature_std = checkpoint["feature_std"]
+feature_mean = checkpoint["feature_mean"].cpu().numpy()
+feature_std = checkpoint["feature_std"].cpu().numpy()
 
 def predict_rep(frames):
     """Return predicted labels and associated probabilities."""

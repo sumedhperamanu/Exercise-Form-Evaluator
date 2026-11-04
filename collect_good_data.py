@@ -7,7 +7,7 @@ from datetime import datetime
 exercise = "squat"
 
 label = "good"
-data_dir = f"data/{exercise}/{label}"
+data_dir = f"data/{exercise}/testing_data/{label}"
 os.makedirs(data_dir, exist_ok=True)
 
 mp_pose = mp.solutions.pose

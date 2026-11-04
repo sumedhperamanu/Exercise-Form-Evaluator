@@ -255,8 +255,8 @@ print(confusion_matrix(
 torch.save({
     "state_dict": model.cpu().state_dict(),
     "classes": encoder.classes_.tolist(),
-    "feature_mean": feature_mean,
-    "feature_std": feature_std,
+    "feature_mean": torch.tensor(feature_mean, dtype=torch.float32),
+    "feature_std": torch.tensor(feature_std, dtype=torch.float32),
     "num_frames": num_frames,
     "input_size": input_size
 }, model_dir / "squat_classifier.pt")
