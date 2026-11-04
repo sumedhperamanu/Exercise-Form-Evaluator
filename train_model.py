@@ -28,7 +28,7 @@ epochs = 60
 learning_rate = 0.001
 
 device = torch.device(
-    "cuda" if torch.cuda.is_available else "cpu"
+    "cuda" if torch.cuda.is_available() else "cpu"
 )
 
 torch.manual_seed(42)
@@ -55,7 +55,7 @@ def load_rep(csv_path):
 
     sequence = df[expected_cols].apply(
         pd.to_numeric, errors="coerce"
-    ).to_numpy(dtype=np.float32)
+    ).to_numpy(dtype=np.float32, copy=True)
 
     sequence[~np.isfinite(sequence)] = np.nan
 
@@ -169,7 +169,7 @@ class SquatClassifier(nn.Module):
         super().__init__()
 
         self.network = nn.Sequential(
-            nn.Flatten,
+            nn.Flatten(),
 
             nn.Linear(input_size * num_frames, 256),
             nn.ReLU(),
@@ -195,7 +195,7 @@ loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(
     model.parameters(),
     lr = learning_rate,
-    weight_decay = 1e^-4
+    weight_decay = 1e-4
 )
 
 elapsed = time.perf_counter() - start_time
@@ -232,7 +232,7 @@ model.eval()
 
 with torch.no_grad():
     logits = model(X_test.to(device))
-    predictions = logits.argmax(dim=1).cpu.numpy()
+    predictions = logits.argmax(dim=1).cpu().numpy()
 
 print("\nClassification Report")
 print(classification_report(
