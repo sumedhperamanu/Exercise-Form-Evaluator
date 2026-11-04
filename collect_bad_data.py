@@ -7,7 +7,7 @@ import time
 
 exercise = "squat"
 
-label = "knee_valgus"
+label = "shallow"
 data_dir = f"data/{exercise}/{label}"
 os.makedirs(data_dir, exist_ok=True)
 
