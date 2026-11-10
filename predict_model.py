@@ -4,8 +4,9 @@ import numpy as np
 import torch
 from torch import nn
 import pandas as pd
-from preprocessing import normalize_body
+from preprocessing import normalize_body, hip_knee_gap
 
+shallow_gap = 0.4
 num_frames = 30
 input_size = 132
 
@@ -91,7 +92,7 @@ def predict_rep(frames):
     ], axis=1)
 
     sequence = normalize_body(sequence)
-
+    gap = hip_knee_gap(sequence)
     sequence = (sequence - feature_mean) / feature_std
 
     x = torch.tensor(
@@ -103,10 +104,14 @@ def predict_rep(frames):
             model(x), dim=1
         )[0].cpu().numpy()
 
-    best_idx = int(np.argmax(probabilities))
+    if gap > shallow_gap:
+        label = "shallow"
+    else:
+        others = [i for i, c in enumerate(classes) if c != "shallow"]
+        label = classes[max(others, key=lambda i: probabilities[i])]
 
     return {
-        "label": classes[best_idx],
+        "label": label,
         "probabilities": {
             name: float(prob)
             for name, prob in zip(classes, probabilities)
@@ -147,8 +152,8 @@ for category in ["good", "shallow", "knee_valgus"]:
     for csv_path in sorted(folder.glob("*.csv")):
         result = predict_csv(csv_path)
 
-        print(f"\n File: {csv_path.name}")
-        print(f" Actual Class: {category}")
+        print(f"\nFile: {csv_path.name}")
+        print(f"Actual Class: {category}")
         print(f"Predicted Class: {result['label']}")
 
         for label, probability in result["probabilities"].items():
