@@ -4,6 +4,7 @@ import numpy as np
 import torch
 from torch import nn
 import pandas as pd
+from preprocessing import normalize_body
 
 num_frames = 30
 input_size = 132
@@ -20,13 +21,13 @@ class SquatClassifier (nn.Module):
 
         self.network = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(input_size * num_frames, 256),
+            nn.Linear(input_size * num_frames, 64),
             nn.ReLU(),
             nn.Dropout(0.3),
-            nn.Linear(256, 128),
+            nn.Linear(64, 32),
             nn.ReLU(),
             nn.Dropout(0.2),
-            nn.Linear(128, num_classes)
+            nn.Linear(32, num_classes)
         )
 
     def forward(self, x):
@@ -88,6 +89,8 @@ def predict_rep(frames):
         )
         for j in range(input_size)
     ], axis=1)
+
+    sequence = normalize_body(sequence)
 
     sequence = (sequence - feature_mean) / feature_std
 

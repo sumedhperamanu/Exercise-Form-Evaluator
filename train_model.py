@@ -9,6 +9,9 @@ from torch.utils.data import TensorDataset, DataLoader
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import classification_report, confusion_matrix
+from datetime import datetime
+from sklearn.model_selection import StratifiedGroupKFold
+from preprocessing import normalize_body
 
 start_time = time.perf_counter()
 
@@ -33,6 +36,13 @@ device = torch.device(
 
 torch.manual_seed(42)
 np.random.seed(42)
+
+def read_timestamp(csv_path):
+    with open(csv_path) as f:
+        stamp = f.readline().strip().split(",")[1]
+    return datetime.strptime(stamp, "%Y-%m-%d_%H:%M:%S")
+
+timestamps = []
 
 # Read a Rep from CSV File
 
@@ -81,7 +91,7 @@ def load_rep(csv_path):
         for feature_idx in range(input_size)
     ], axis=1)
 
-    return resized
+    return normalize_body(resized)
 
 # Load Labelled Reps
 
@@ -101,6 +111,7 @@ for label_dir in sorted(data_dir.iterdir()):
 
             sequences.append(sequence)
             labels.append(label)
+            timestamps.append(read_timestamp(csv_path))
             files.append(str(csv_path))
 
         except Exception as exc:
@@ -133,11 +144,7 @@ if len(label_counts) < 2 or np.min(label_counts) < 2:
     )
 
 X_train, X_test, y_train, y_test = train_test_split(
-    X,
-    y,
-    test_size = 0.2,
-    random_state = 42,
-    stratify = y
+    X, y, test_size=0.2, random_state=42, stratify=y
 )
 
 # Standardizing Features with Training Data
@@ -171,15 +178,15 @@ class SquatClassifier(nn.Module):
         self.network = nn.Sequential(
             nn.Flatten(),
 
-            nn.Linear(input_size * num_frames, 256),
+            nn.Linear(input_size * num_frames, 64),
             nn.ReLU(),
             nn.Dropout(0.3),
 
-            nn.Linear(256, 128),
+            nn.Linear(64, 32),
             nn.ReLU(),
             nn.Dropout(0.2),
 
-            nn.Linear(128, num_classes)
+            nn.Linear(32, num_classes)
         )
 
     def forward(self, x):
