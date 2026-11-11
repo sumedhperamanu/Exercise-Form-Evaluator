@@ -28,3 +28,6 @@ Thumbs.db
 
 # Ignore Mac files
 .DS_Storetrial data/
+main.py
+camera.py
+collect_good_data.py
