@@ -27,4 +27,4 @@ cache/
 Thumbs.db
 
 # Ignore Mac files
-.DS_Store
+.DS_Storetrial data/
