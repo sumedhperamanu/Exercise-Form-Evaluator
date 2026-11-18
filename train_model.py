@@ -11,7 +11,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import classification_report, confusion_matrix
 from datetime import datetime
 from sklearn.model_selection import StratifiedGroupKFold
-from preprocessing import normalize_body
+from preprocessing import body_measurements
 
 start_time = time.perf_counter()
 
@@ -25,6 +25,7 @@ num_frames = 30
 num_landmarks = 33
 values_per_landmark = 4
 input_size = num_landmarks * values_per_landmark
+num_features = 6
 
 batch_size = 16
 epochs = 60
@@ -91,7 +92,7 @@ def load_rep(csv_path):
         for feature_idx in range(input_size)
     ], axis=1)
 
-    return normalize_body(resized)
+    return body_measurements(resized)
 
 # Load Labelled Reps
 
@@ -149,8 +150,8 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 # Standardizing Features with Training Data
 
-feature_mean = X_train.reshape(-1, input_size).mean(axis=0)
-feature_std = X_train.reshape(-1, input_size).std(axis=0)
+feature_mean = X_train.reshape(-1, num_features).mean(axis=0)
+feature_std = X_train.reshape(-1, num_features).std(axis=0)
 
 feature_std[feature_std < 1e-6] = 1
 
@@ -193,7 +194,7 @@ class SquatClassifier(nn.Module):
         return self.network(x)
 
 model = SquatClassifier(
-    input_size,
+    num_features,
     len(encoder.classes_)
 ).to(device)
 

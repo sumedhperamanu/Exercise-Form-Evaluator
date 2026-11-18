@@ -4,11 +4,12 @@ import numpy as np
 import torch
 from torch import nn
 import pandas as pd
-from preprocessing import normalize_body, hip_knee_gap
+from preprocessing import normalize_body, hip_knee_gap, body_measurements
 
 shallow_gap = 0.4
 num_frames = 30
 input_size = 132
+num_features = 6
 
 device = torch.device(
     "cuda" if torch.cuda.is_available() else "cpu"
@@ -45,7 +46,7 @@ checkpoint = torch.load(
 classes = checkpoint["classes"]
 
 model = SquatClassifier(
-    input_size, len(classes)
+    num_features, len(classes)
 ).to(device)
 
 model.load_state_dict(checkpoint["state_dict"])
@@ -91,8 +92,9 @@ def predict_rep(frames):
         for j in range(input_size)
     ], axis=1)
 
-    sequence = normalize_body(sequence)
-    gap = hip_knee_gap(sequence)
+    gap = hip_knee_gap(normalize_body(sequence))
+    sequence = body_measurements(sequence)
+
     sequence = (sequence - feature_mean) / feature_std
 
     x = torch.tensor(
@@ -104,11 +106,13 @@ def predict_rep(frames):
             model(x), dim=1
         )[0].cpu().numpy()
 
+    others = [i for i, c in enumerate(classes) if c != "shallow"]
+    deep_label = classes[max(others, key=lambda i: probabilities[i])]
+
     if gap > shallow_gap:
-        label = "shallow"
+        label = "shallow + knee_valgus" if deep_label == "knee_valgus" else "shallow"
     else:
-        others = [i for i, c in enumerate(classes) if c != "shallow"]
-        label = classes[max(others, key=lambda i: probabilities[i])]
+        label = deep_label
 
     return {
         "label": label,
