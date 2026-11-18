@@ -70,14 +70,20 @@ for frame in frameCapture():
                     state = "ascending"
             elif state == "ascending":
                 current_rep.append(frame_data)
-                if len(current_rep) >= 5:
-                    rep_count += 1
-                    label = predict_rep(current_rep)['label']
-                    message = feedback.get(label, label)
-                    color = (0, 255, 0) if label == "good" else (0, 0, 255)
-                    print(f"Rep {rep_count}: {message}")
-                current_rep = []
-                state = "standing"
+                if displacement < end_thresh:
+                    if len(current_rep) >= 5:
+                        rep_count += 1
+                        label = predict_rep(current_rep)['label']
+                        message = feedback.get(label, label)
+                        color = (0, 255, 0) if label == "good" else (0, 0, 255)
+                        print(f"Rep {rep_count}: {message}")
+                    else:
+                        message = "Rep too short; extend your reps"
+                        color = (0, 165, 255)
+                        print(message)
+
+                    current_rep = []
+                    state = "standing"
 
     if standing_hip_y is None:
         cv2.putText(frame, "Stand still...", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
