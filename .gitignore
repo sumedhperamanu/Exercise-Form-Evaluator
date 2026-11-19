@@ -31,3 +31,6 @@ Thumbs.db
 camera.py
 cameratest.py
 collect_good_data.py
+
+# Ignore environment variables
+.env

@@ -3,6 +3,14 @@ import cv2
 import time
 from camera import frameCapture
 from predict_model import predict_rep
+import requests
+import time
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+THINGSPEAK_API_KEY = os.getenv("THINGSPEAK_API_KEY")
 
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
@@ -27,7 +35,10 @@ state = "standing"
 current_rep = []
 max_displacement = 0
 record_start = 0
+
 rep_count = 0
+good_rep_count = 0
+
 message = ""
 color = (255, 255, 255)
 
@@ -76,6 +87,7 @@ for frame in frameCapture():
                         label = predict_rep(current_rep)['label']
                         message = feedback.get(label, label)
                         color = (0, 255, 0) if label == "good" else (0, 0, 255)
+                        if label == "good": good_rep_count += 1
                         print(f"Rep {rep_count}: {message}")
                     else:
                         message = "Rep too short; extend your reps"
