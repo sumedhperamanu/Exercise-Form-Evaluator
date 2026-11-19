@@ -4,13 +4,17 @@ import time
 from camera import frameCapture
 from predict_model import predict_rep
 import requests
-import time
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
 
+BASE_URL = "https://api.thingspeak.com/update"
 THINGSPEAK_API_KEY = os.getenv("THINGSPEAK_API_KEY")
+
+UPLOADS_ENABLED = bool(THINGSPEAK_API_KEY)
+if not UPLOADS_ENABLED:
+    print("Warning: THINGSPEAK_API_KEY not set, uploads disabled for this run.")
 
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
@@ -36,11 +40,38 @@ current_rep = []
 max_displacement = 0
 record_start = 0
 
-rep_count = 0
+total_rep_count = 0
 good_rep_count = 0
 
 message = ""
 color = (255, 255, 255)
+
+UPLOAD_INTERVAL_S = 20
+last_request_time_s = time.time()
+
+
+def send_data_to_thingspeak(field_name, field_value):
+    payload = {
+        "api_key": THINGSPEAK_API_KEY,
+        field_name: field_value
+    }
+
+    try:
+        # Send data via HTTP POST
+        response = requests.post(BASE_URL, data=payload, timeout=5)
+        
+        # A status code of 200 and an entry ID > 0 means success
+        if response.status_code == 200 and int(response.text) > 0:
+            print(f"Success! Entry ID: {response.text} | Value: {field_value}")
+            return True
+        else:
+            print(f"Failed to update. Response: {response.text}")
+            
+    except Exception as e:
+        print(f"Error connecting to ThingSpeak: {e}")
+
+    return False
+
 
 for frame in frameCapture():
     results = pose.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
@@ -83,12 +114,12 @@ for frame in frameCapture():
                 current_rep.append(frame_data)
                 if displacement < end_thresh:
                     if len(current_rep) >= 5:
-                        rep_count += 1
+                        total_rep_count += 1
                         label = predict_rep(current_rep)['label']
                         message = feedback.get(label, label)
                         color = (0, 255, 0) if label == "good" else (0, 0, 255)
                         if label == "good": good_rep_count += 1
-                        print(f"Rep {rep_count}: {message}")
+                        print(f"Rep {total_rep_count}: {message}")
                     else:
                         message = "Rep too short; extend your reps"
                         color = (0, 165, 255)
@@ -100,7 +131,7 @@ for frame in frameCapture():
     if standing_hip_y is None:
         cv2.putText(frame, "Stand still...", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
     else:
-        cv2.putText(frame, f"Reps: {rep_count}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+        cv2.putText(frame, f"Reps: {total_rep_count}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
         cv2.putText(frame, message, (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
 
     cv2.imshow("Squat Coach", frame)
@@ -114,6 +145,11 @@ for frame in frameCapture():
         start_time = time.time()
         state = "standing"
         current_rep = []
+
+    if UPLOADS_ENABLED and time.time() - last_request_time_s >= UPLOAD_INTERVAL_S:
+        request_successful = send_data_to_thingspeak("field1", str(total_rep_count))
+
+        last_request_time_s = time.time()
 
 pose.close()
 cv2.destroyAllWindows()
