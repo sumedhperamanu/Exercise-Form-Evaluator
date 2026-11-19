@@ -6,6 +6,7 @@ from predict_model import predict_rep
 import requests
 from dotenv import load_dotenv
 import os
+import threading
 
 load_dotenv()
 
@@ -48,6 +49,8 @@ color = (255, 255, 255)
 
 UPLOAD_INTERVAL_S = 20
 last_request_time_s = time.time()
+
+upload_thread = None
 
 
 def send_data_to_thingspeak(field_name, field_value):
@@ -146,10 +149,21 @@ for frame in frameCapture():
         state = "standing"
         current_rep = []
 
-    if UPLOADS_ENABLED and time.time() - last_request_time_s >= UPLOAD_INTERVAL_S:
-        request_successful = send_data_to_thingspeak("field1", str(total_rep_count))
+    now = time.time()
+    upload_idle = upload_thread is None or not upload_thread.is_alive()
+    if UPLOADS_ENABLED and upload_idle and now - last_request_time_s >= UPLOAD_INTERVAL_S:
+        last_request_time_s = now
 
-        last_request_time_s = time.time()
+        upload_thread = threading.Thread(
+            target=send_data_to_thingspeak,
+            args=("field1", str(total_rep_count)),
+            daemon=True
+        )
+        upload_thread.start()
+
+
+if upload_thread is not None:
+    upload_thread.join(timeout=5)
 
 pose.close()
 cv2.destroyAllWindows()
