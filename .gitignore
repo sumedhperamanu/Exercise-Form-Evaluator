@@ -15,10 +15,10 @@ cache/
 .pytest_cache/
 
 # Trained model files
-*.pt
-*.pth
-*.h5
-*.keras
+# *.pt
+# *.pth
+# *.h5
+# *.keras
 
 # Editor / OS files
 .vscode/
