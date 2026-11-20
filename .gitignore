@@ -1,18 +1,18 @@
 # Ignore python cache
-__pycache__/
-*.pyc
+# __pycache__/
+# *.pyc
 
 # Virtual environments
 venv/
-.venv/
+.venv*/
 
 # Ignore video training data
 #.csv
 
 # Ignore local datasets
-#data/
-cache/
-.pytest_cache/
+# #data/
+# cache/
+# .pytest_cache/
 
 # Trained model files
 # *.pt
@@ -21,12 +21,13 @@ cache/
 # *.keras
 
 # Editor / OS files
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
+# .vscode/
+# .idea/
+# .DS_Store
+# Thumbs.db
 
 # Ignore Mac files
-.DS_Storetrial data/
+.DS_Store
+trial data/
 cameratest.py
 collect_good_data.py

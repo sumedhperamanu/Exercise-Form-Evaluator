@@ -32,8 +32,8 @@ def body_measurements(sequence):
     for hip, knee, ankle in [(23, 25, 27), (24, 26, 28)]:
         t = (y[:, knee] - y[:, hip]) / (y[:, ankle] - y[:, hip] + 1e-9)
         line_x = x[:, hip] + t * (x[:, ankle] - x[:, hip])
-        caves.append((np.abs(line_x - hip_x)) - np.abs(x[:, knee] - hip_x) / torso)
-    knee_y = (x[:, 25] + x[:, 26]) / 2
+        caves.append((np.abs(line_x - hip_x) - np.abs(x[:, knee] - hip_x)) / torso)
+    knee_y = (y[:, 25] + y[:, 26]) / 2
     ankle_y = (y[:, 27] + y[:, 28]) / 2
     return np.stack([(knee_y - hip_y) / torso, (ankle_y - hip_y) / torso,
                     caves[0], caves[1],

@@ -148,18 +148,20 @@ def predict_csv(csv_path):
 
     return predict_rep(frames)
 
-testing_dir = Path("data/squat/testing_data")
+if __name__ == "__main__":
 
-for category in ["good", "shallow", "knee_valgus"]:
-    folder = testing_dir / category
+    testing_dir = Path("data/squat/testing_data")
 
-    for csv_path in sorted(folder.glob("*.csv")):
-        result = predict_csv(csv_path)
+    for category in ["good", "shallow", "knee_valgus"]:
+        folder = testing_dir / category
 
-        print(f"\nFile: {csv_path.name}")
-        print(f"Actual Class: {category}")
-        print(f"Predicted Class: {result['label']}")
+        for csv_path in sorted(folder.glob("*.csv")):
+            result = predict_csv(csv_path)
 
-        for label, probability in result["probabilities"].items():
-            print(f"{label}: {probability:.2%}")
+            print(f"\nFile: {csv_path.name}")
+            print(f"Actual Class: {category}")
+            print(f"Predicted Class: {result['label']}")
+
+            for label, probability in result["probabilities"].items():
+                print(f"{label}: {probability:.2%}")
 
