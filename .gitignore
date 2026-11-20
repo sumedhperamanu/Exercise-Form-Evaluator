@@ -1,6 +1,6 @@
 # Ignore python cache
-# __pycache__/
-# *.pyc
+__pycache__/
+*.pyc
 
 # Virtual environments
 venv/
@@ -11,8 +11,8 @@ venv/
 
 # Ignore local datasets
 # #data/
-# cache/
-# .pytest_cache/
+cache/
+.pytest_cache/
 
 # Trained model files
 # *.pt
