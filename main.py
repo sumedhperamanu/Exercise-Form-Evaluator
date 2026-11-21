@@ -11,7 +11,7 @@ mp_drawing = mp.solutions.drawing_utils
 start_thresh = 0.02
 reversal = 0.01
 end_thresh = 0.012
-calibration_delay = 5
+calibration_delay = 3
 
 feedback = {
     "good": "Good rep",
