@@ -13,11 +13,6 @@ def frameCapture():
         if not success:
             break
 
-        # cv2.imshow("Camera", frame)
-
-        # if cv2.waitKey(1) & 0xFF == ord("q"):
-        #     break
-
         yield frame
 
     camera.release()
