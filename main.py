@@ -22,7 +22,6 @@ feedback = {
 }
 
 standing_hip_y = None
-# standing_samples = []
 
 recent_hips = deque(maxlen=20)
 rep_start = 0
