@@ -7,16 +7,16 @@ def frameCapture():
     if not camera.isOpened():
         print("Could not access camera")
         return
-    
+
     while True:
         success, frame = camera.read()
         if not success:
             break
 
-        cv2.imshow("Camera", frame)
+        # cv2.imshow("Camera", frame)
 
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
+        # if cv2.waitKey(1) & 0xFF == ord("q"):
+        #     break
 
         yield frame
 
