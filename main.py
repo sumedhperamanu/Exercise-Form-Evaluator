@@ -34,15 +34,24 @@ feedback = {
 }
 
 standing_hip_y = None
+torso_len = None
 standing_samples = []
+torso_samples = []
 start_time = time.time()
 state = "standing"
 current_rep = []
 max_displacement = 0
+last_relative_depth = 0
+relative_depth_samples = []
 record_start = 0
 
 total_rep_count = 0
-good_rep_count = 0
+rep_counts = {
+    "good": 0,
+    "shallow": 0,
+    "knee_valgus": 0,
+    "shallow + knee_valgus": 0
+}
 
 message = ""
 color = (255, 255, 255)
@@ -53,10 +62,10 @@ last_request_time_s = time.time()
 upload_thread = None
 
 
-def send_data_to_thingspeak(field_name, field_value):
+def send_data_to_thingspeak(data_to_send):
     payload = {
         "api_key": THINGSPEAK_API_KEY,
-        field_name: field_value
+        **data_to_send
     }
 
     try:
@@ -65,7 +74,7 @@ def send_data_to_thingspeak(field_name, field_value):
         
         # A status code of 200 and an entry ID > 0 means success
         if response.status_code == 200 and int(response.text) > 0:
-            print(f"Success! Entry ID: {response.text} | Value: {field_value}")
+            print(f"Success! Entry ID: {response.text} | Value: {data_to_send}")
             return True
         else:
             print(f"Failed to update. Response: {response.text}")
@@ -82,6 +91,7 @@ for frame in frameCapture():
     if results.pose_landmarks:
         mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
         landmarks = results.pose_landmarks.landmark
+        hip_y_center = (landmarks[23].y + landmarks[24].y) / 2
 
         frame_data = []
 
@@ -93,15 +103,23 @@ for frame in frameCapture():
                 landmark.visibility
             ])
 
-        hip_y = (landmarks[23].y + landmarks[24].y) / 2
-
         if standing_hip_y is None:
             if time.time() - start_time > calibration_delay:
-                standing_samples.append(hip_y)
-                if len(standing_samples) >= 30:
+                required_landmarks = [11, 12, 23, 24]
+
+                if all(landmarks[i].visibility > 0.7 for i in required_landmarks):
+                    shoulder_y = (landmarks[11].y + landmarks[12].y) / 2
+
+                    torso_sample = abs(shoulder_y - hip_y_center)
+                    torso_samples.append(torso_sample)
+
+                    standing_samples.append(hip_y_center)
+
+                if len(standing_samples) >= 30 and len(torso_samples) >= 30:
                     standing_hip_y = sum(standing_samples) / len(standing_samples)
+                    torso_len = sum(torso_samples) / len(torso_samples)
         else:
-            displacement = hip_y - standing_hip_y
+            displacement = hip_y_center - standing_hip_y
 
             if state == "standing":
                 if displacement > start_thresh:
@@ -118,10 +136,20 @@ for frame in frameCapture():
                 if displacement < end_thresh:
                     if len(current_rep) >= 5:
                         total_rep_count += 1
+
+                        if torso_len > 0:
+                            last_relative_depth = max_displacement / torso_len
+                            relative_depth_samples.append(last_relative_depth)
+
                         label = predict_rep(current_rep)['label']
                         message = feedback.get(label, label)
                         color = (0, 255, 0) if label == "good" else (0, 0, 255)
-                        if label == "good": good_rep_count += 1
+
+                        if label in rep_counts:
+                            rep_counts[label] += 1
+                        else:
+                            print(f"Warning: Unknown prediction label: {label}")
+
                         print(f"Rep {total_rep_count}: {message}")
                     else:
                         message = "Rep too short; extend your reps"
@@ -144,19 +172,49 @@ for frame in frameCapture():
         break
     if key == ord("r"):
         standing_hip_y = None
+        torso_len = None
+        max_displacement = 0
+        last_relative_depth = 0
+        relative_depth_samples = []
         standing_samples = []
+        torso_samples = []
         start_time = time.time()
         state = "standing"
         current_rep = []
+        message = ""
+
+        total_rep_count = 0
+        rep_counts = {
+            "good": 0,
+            "shallow": 0,
+            "knee_valgus": 0,
+            "shallow + knee_valgus": 0
+        }
 
     now = time.time()
     upload_idle = upload_thread is None or not upload_thread.is_alive()
-    if UPLOADS_ENABLED and upload_idle and now - last_request_time_s >= UPLOAD_INTERVAL_S:
+    if UPLOADS_ENABLED and upload_idle and now - last_request_time_s >= UPLOAD_INTERVAL_S and total_rep_count > 0:
         last_request_time_s = now
+
+        if len(relative_depth_samples) > 0:
+            average_relative_depth = sum(relative_depth_samples) / len(relative_depth_samples)
+        else:
+            average_relative_depth = 0
+
+        thingspeak_data = {
+            "field1": total_rep_count,
+            "field2": rep_counts["good"],
+            "field3": rep_counts["shallow"],
+            "field4": rep_counts["knee_valgus"],
+            "field5": rep_counts["shallow + knee_valgus"],
+            "field6": round(rep_counts["good"] / total_rep_count, 3),
+            "field7": round(average_relative_depth, 3),
+            "field8": round(last_relative_depth, 3)
+        }
 
         upload_thread = threading.Thread(
             target=send_data_to_thingspeak,
-            args=("field1", str(total_rep_count)),
+            args=(thingspeak_data,),
             daemon=True
         )
         upload_thread.start()
