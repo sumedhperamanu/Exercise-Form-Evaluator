@@ -31,3 +31,6 @@ cache/
 trial data/
 cameratest.py
 collect_good_data.py
+
+# Ignore environment variables
+.env
