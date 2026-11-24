@@ -5,6 +5,8 @@ import os
 from datetime import datetime
 import time
 
+# Initializing variables
+
 exercise = "squat"
 
 label = "good"
@@ -45,6 +47,8 @@ print("Controls: ")
 print("Press space to start/stop recording")
 print("Press q to quit")
 
+# Saves rep data by frame into a CSV file
+
 def save_rep(frames, rep_number):
     if len(frames) < 5:
             print("Rep too short - not saved")
@@ -69,6 +73,8 @@ def save_rep(frames, rep_number):
         writer.writerow(["Date", recording_time])
         writer.writerow([])
         header = []
+
+        # Data stored onto CSV files
 
         for i in range(33):
             header.extend([
@@ -113,6 +119,9 @@ while True:
         right_hip_y = landmarks[right_hip].y
 
         hip_y = (left_hip_y + right_hip_y) / 2
+
+        # Detects whether user is ascending, descending, or standing still to count reps and
+        # know when to create a new CSV file for the next rep
 
         if recording:
             frame_data = []
@@ -164,6 +173,9 @@ while True:
     else:
         status = "NOT RECORDING"
 
+    # Information regarding rep count, exercise, exercise label (shallow, good, knee_valgus)
+    # and state (ascending, descending, standing)
+
     cv2.putText(
         frame,
         f"Exercise {exercise}",
@@ -207,6 +219,8 @@ while True:
     cv2.imshow("Exercise Data Collection", frame)
 
     key = cv2.waitKey(1) & 0xFF
+
+    # Key binds for program
 
     if key == ord(" "):
         if not recording:

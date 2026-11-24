@@ -122,6 +122,8 @@ def predict_rep(frames):
         }
     }
 
+# Classifying one stored rep
+
 def predict_csv(csv_path):
     df = pd.read_csv(csv_path, skiprows=2)
 
@@ -147,6 +149,8 @@ def predict_csv(csv_path):
     )
 
     return predict_rep(frames)
+
+# Running Test Set
 
 if __name__ == "__main__":
 

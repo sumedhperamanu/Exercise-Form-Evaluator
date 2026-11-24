@@ -3,6 +3,8 @@ import numpy as np
 l_shoulder, r_shoulder, l_hip, r_hip = 11, 12, 23, 24
 aspect = 16 / 9
 
+# Removes position and size, calculates midpoints for hips and shoulders, and finds torso length as the longest shoulder-hip distance during the rep
+
 def normalize_body(sequence):
     lm = sequence.reshape(len(sequence), 33, 4).copy()
     xyz = lm[..., :3]
@@ -14,10 +16,14 @@ def normalize_body(sequence):
     xyz /= torso + 1e-6
     return lm.reshape(len(sequence), 132)
 
+# Depth rule for differentiating between shallow and good squats
+
 def hip_knee_gap(normalized):
     lm = normalized.reshape(len(normalized), 33, 4)
     knee_y = (lm[:, 25, 1] + lm[:, 26, 1]) / 2
     return knee_y.min()
+
+# Concerns depth, hip height, left/right knee cave, knee-to-knee width, and ankle-to-ankle width
 
 def body_measurements(sequence):
     lm = sequence.reshape(len(sequence), 33, 4)

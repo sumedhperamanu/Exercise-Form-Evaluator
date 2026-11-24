@@ -1,5 +1,6 @@
 import cv2
 
+# Opens camera and hands over frames to main.py
 
 def frameCapture():
     camera = cv2.VideoCapture(0)

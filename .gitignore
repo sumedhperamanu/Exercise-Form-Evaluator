@@ -10,7 +10,7 @@ venv/
 #.csv
 
 # Ignore local datasets
-# #data/
+# data/
 cache/
 .pytest_cache/
 
@@ -34,4 +34,3 @@ collect_good_data.py
 
 # Ignore environment variables
 .env
-__pycache__/camera.cpython-312.pyc
