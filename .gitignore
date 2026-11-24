@@ -34,3 +34,4 @@ collect_good_data.py
 
 # Ignore environment variables
 .env
+__pycache__/camera.cpython-312.pyc
