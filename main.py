@@ -11,6 +11,8 @@ import threading
 
 load_dotenv()
 
+# Initializing variables and configurations
+
 BASE_URL = "https://api.thingspeak.com/update"
 THINGSPEAK_API_KEY = os.getenv("THINGSPEAK_API_KEY")
 
@@ -63,6 +65,7 @@ last_request_time_s = time.time()
 
 upload_thread = None
 
+# Sending data to Thingspeak
 
 def send_data_to_thingspeak(data_to_send):
     payload = {
@@ -86,13 +89,16 @@ def send_data_to_thingspeak(data_to_send):
 
     return False
 
+# Set the standing hip height and torso length from the last ~1 second
 
 def calibrate():
-    """Set the standing hip height and torso length from the last ~1 second."""
     global standing_hip_y, torso_len
     standing_hip_y = sum(recent_hips) / len(recent_hips)
     torso_len = sum(recent_torso) / len(recent_torso)
 
+# State tracker (where in rep user is -- ascending, descending, or standing)
+# along with corresponding messages. Tracks landmark data from real-time user squats
+# instead of through a csv file, and gives that data directly to predict_model.py to give instant form feedback
 
 for frame in frameCapture():
     results = pose.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
@@ -179,7 +185,9 @@ for frame in frameCapture():
         cv2.putText(frame, f"Reps: {total_rep_count}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2)
         cv2.putText(frame, message, (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
 
-    cv2.imshow("Squat Coach", frame)
+    cv2.imshow("Squat Form Evaluator", frame)
+
+    # Program keybinds
 
     key = cv2.waitKey(1) & 0xFF
     if key == ord("q"):
@@ -214,6 +222,8 @@ for frame in frameCapture():
             average_relative_depth = sum(relative_depth_samples) / len(relative_depth_samples)
         else:
             average_relative_depth = 0
+
+        # Data sent over to Thingspeak
 
         thingspeak_data = {
             "field1": total_rep_count,
