@@ -14,8 +14,9 @@ load_dotenv()
 # Initializing variables and configurations
 
 BASE_URL = "https://api.thingspeak.com/update"
-THINGSPEAK_API_KEY = os.getenv("THINGSPEAK_API_KEY")
+THINGSPEAK_API_KEY = os.getenv("THINGSPEAK_API_KEY")  # Read the API key from an ignore .env file for security
 
+# Only allow uploads to ThingSpeak if there is a valid API key
 UPLOADS_ENABLED = bool(THINGSPEAK_API_KEY)
 if not UPLOADS_ENABLED:
     print("Warning: THINGSPEAK_API_KEY not set, uploads disabled for this run.")
@@ -23,6 +24,7 @@ if not UPLOADS_ENABLED:
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
+# Define's MediaPipe pose-detection parameters
 start_thresh = 0.02
 reversal = 0.01
 end_thresh = 0.012
@@ -103,6 +105,7 @@ def calibrate():
 for frame in frameCapture():
     results = pose.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
+    # Loop through every landmark and, if the visibility is high enough, add it to an array to average hip height and torso length
     if results.pose_landmarks:
         landmarks = results.pose_landmarks.landmark
 
@@ -149,10 +152,14 @@ for frame in frameCapture():
             elif state == "descending":
                 current_rep.append(frame_data)
                 max_displacement = max(max_displacement, displacement)
+
+                # Checks if the user has just changed from descending to ascending
                 if displacement < max_displacement - reversal:
                     state = "ascending"
             elif state == "ascending":
                 current_rep.append(frame_data)
+
+                # Checks if the user has just finished a rep, and if so, classifies its form using a neural network
                 if displacement < end_thresh:
                     if len(current_rep) >= 7:
                         total_rep_count += 1
@@ -190,8 +197,10 @@ for frame in frameCapture():
     # Program keybinds
 
     key = cv2.waitKey(1) & 0xFF
+    # If ths user presses q: end the program
     if key == ord("q"):
         break
+    # If the user presses r: reset all trhe variables for reconfiguration (predominantly used for testing)
     if key == ord("r"):
         standing_hip_y = None
         torso_len = None
@@ -213,6 +222,7 @@ for frame in frameCapture():
             "shallow + knee_valgus": 0
         }
 
+    # If it has been long enough since the last ThingSpeak upload, and there is valid data to be uploaded, attempt to upload data
     now = time.time()
     upload_idle = upload_thread is None or not upload_thread.is_alive()
     if UPLOADS_ENABLED and upload_idle and now - last_request_time_s >= UPLOAD_INTERVAL_S and total_rep_count > 0:
@@ -236,6 +246,7 @@ for frame in frameCapture():
             "field8": round(last_relative_depth, 3)
         }
 
+        # Use a thread to allow the camera and neural network to continue capturing new data while current data uploads
         upload_thread = threading.Thread(
             target=send_data_to_thingspeak,
             args=(thingspeak_data,),
@@ -244,6 +255,7 @@ for frame in frameCapture():
         upload_thread.start()
 
 
+# If the program is ended, the thread continues trying to upload for 5 more seconds before exiting
 if upload_thread is not None:
     upload_thread.join(timeout=5)
 
